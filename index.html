@@ -22,7 +22,7 @@
         .header {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
+            padding: 2rem 3rem; /* Increased padding */
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             border-bottom: 3px solid #4CAF50;
             display: flex;
@@ -32,18 +32,38 @@
         }
 
         .header-content {
+            display: flex;
+            align-items: center;
+            gap: 3rem;
             flex: 1;
+        }
+
+        .main-logo-container {
+            flex-shrink: 0;
+        }
+
+        .main-logo {
+            height: 180px; /* Increased size */
+            width: 180px; /* Increased size */
+            border-radius: 40px; /* Larger radius */
+            box-shadow: 0 8px 32px rgba(76,175,80,0.2);
+            background: #fff;
+            padding: 20px;
+            object-fit: contain;
         }
 
         .header h1 {
             color: #2E7D32;
-            font-size: 1.8rem;
+            font-size: 2.4rem; /* Larger font */
             margin-bottom: 0.5rem;
+            line-height: 1.2;
         }
 
         .header p {
             color: #666;
-            font-size: 0.9rem;
+            font-size: 1.2rem; /* Larger font */
+            max-width: 800px; /* Control text width */
+            line-height: 1.4;
         }
 
         .main-logo-container {
@@ -627,7 +647,7 @@
             <div class="main-logo-container">
                 <img src="img/logo-opsi.png" alt="Logo Olimpiade Penelitian" class="main-logo">
             </div>
-            <h1>🚌 Monitoring Polusi Udara Bus Trans Jawa Tengah</h1>
+            <h1>Monitoring Polusi Udara Bus Trans Jawa Tengah 🚌</h1>
             <p>Solusi Cerdas Pengurangan Polusi Udara Bus Trans Jawa Tengah Berbasis Sensor MQ-135 dan Filtrasi Udara Lapisan Bertingkat</p>
         </div>
         <div class="logos-container">
