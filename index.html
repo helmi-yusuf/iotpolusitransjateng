@@ -21,7 +21,7 @@
 
         .header {
             background: rgba(255, 255, 255, 0.95);
-            padding: 2rem 4rem;
+            padding: 2rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             border-bottom: 3px solid #4CAF50;
         }
@@ -29,55 +29,50 @@
         .header-content {
             display: flex;
             align-items: center;
-            gap: 3rem;
+            justify-content: space-between;
             max-width: 1400px;
             margin: 0 auto;
+            gap: 2rem;
         }
 
         .main-logo-container {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 0.5rem;
+            gap: 1rem;
         }
 
         .main-logo {
-            height: 250px;
+            height: 120px;
             width: auto;
-            object-fit: contain;
         }
 
         .header-text {
             flex: 1;
-            padding-left: 1rem;
+            max-width: 600px;
         }
 
         .header h1 {
             color: #2E7D32;
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
             line-height: 1.2;
         }
 
         .header p {
             color: #666;
-            font-size: 1.1rem;
-            line-height: 1.5;
-            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            line-height: 1.4;
         }
 
         .logos-container {
             display: flex;
-            gap: 2rem;
             align-items: center;
-            justify-content: flex-end;
-            margin-left: auto;
+            gap: 2rem;
         }
 
-        /* Logo partner tetap sama ukurannya */
         .logo-circle {
-            width: 70px;
-            height: 70px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -86,9 +81,8 @@
         }
 
         .logo-text {
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: #555;
-            font-weight: 500;
             text-align: center;
         }
 
