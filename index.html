@@ -39,18 +39,14 @@
         }
 
         .main-logo {
-            height: 250px;
-            width: 250px;
-            border-radius: 35px;
-            box-shadow: 0 8px 32px rgba(76,175,80,0.2);
-            background: #fff; 
-            padding: 20px;
+            height: 300px; /* Increased size */
+            width: auto; /* Auto width to maintain aspect ratio */
             object-fit: contain;
+            margin-right: 2rem;
         }
 
         .header-text {
             flex: 1;
-            padding-left: 1rem;
         }
 
         .header h1 {
@@ -69,38 +65,15 @@
             font-weight: 500;
         }
 
-        .main-logo-container {
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .main-logo {
-            height: 70px;
-            width: auto;
-            border-radius: 16px;
-            box-shadow: 0 4px 18px rgba(0,0,0,0.10);
-            background: #fff;
-            padding: 6px 12px;
-            object-fit: contain;
-        }
-
         .logos-container {
             display: flex;
             gap: 2rem;
             align-items: center;
-            flex-wrap: wrap;
+            justify-content: flex-end; /* Align logos to the right */
             margin-top: 1rem;
         }
 
-        .logo-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-        }
-
+        /* Restore small logos style */
         .logo-circle {
             width: 90px;
             height: 90px;
