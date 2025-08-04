@@ -32,23 +32,18 @@
         }
 
         .header-content {
-            display: flex;
-            align-items: center;
-            gap: 2.5rem;
             flex: 1;
         }
 
         .header h1 {
             color: #2E7D32;
-            font-size: 2.3rem;
-            margin-bottom: 0.3rem;
-            line-height: 1.1;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
         }
 
         .header p {
             color: #666;
-            font-size: 1.15rem;
-            font-weight: 500;
+            font-size: 0.9rem;
         }
 
         .main-logo-container {
@@ -56,16 +51,15 @@
             justify-content: flex-start;
             align-items: center;
             margin-bottom: 1rem;
-            flex-shrink: 0;
         }
 
         .main-logo {
-            height: 150px;
-            width: 150px;
-            border-radius: 32px;
-            box-shadow: 0 8px 32px rgba(76,175,80,0.18);
+            height: 70px;
+            width: auto;
+            border-radius: 16px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.10);
             background: #fff;
-            padding: 16px;
+            padding: 6px 12px;
             object-fit: contain;
         }
 
@@ -629,16 +623,12 @@
     <div class="timestamp" id="timestamp"></div>
     
     <div class="header">
-        <div class="header-content" style="display: flex; align-items: center; gap: 2.5rem;">
-            <div class="main-logo-container" style="flex-shrink: 0;">
-                <img src="img/logo-opsi.png" alt="Logo Olimpiade Penelitian" class="main-logo" style="height:150px; width:150px; border-radius:32px; box-shadow:0 8px 32px rgba(76,175,80,0.18); background: #fff; padding: 16px;">
+        <div class="header-content">
+            <div class="main-logo-container">
+                <img src="img/logo-opsi.png" alt="Logo Olimpiade Penelitian" class="main-logo">
             </div>
-            <div>
-                <h1 style="margin-bottom:0.3rem; color:#2E7D32; font-size:2.3rem; line-height:1.1;">Monitoring Polusi Udara Bus Trans Jawa Tengah 🚌</h1>
-                <p style="color:#666; font-size:1.15rem; font-weight:500;">
-                    Solusi Cerdas Pengurangan Polusi Udara Bus Trans Jawa Tengah Berbasis Sensor MQ-135 dan Filtrasi Udara Lapisan Bertingkat
-                </p>
-            </div>
+            <h1>🚌 Monitoring Polusi Udara Bus Trans Jawa Tengah</h1>
+            <p>Solusi Cerdas Pengurangan Polusi Udara Bus Trans Jawa Tengah Berbasis Sensor MQ-135 dan Filtrasi Udara Lapisan Bertingkat</p>
         </div>
         <div class="logos-container">
             <div class="logo-item">
@@ -1132,4 +1122,149 @@
                         <h4>${bus.id} ${bus.filtrationActive ? '(Dipantau)' : ''}</h4>
                         <p>${bus.route}</p>
                         <p style="font-size: 0.75rem; color: ${filtrationNeeded ? '#4CAF50' : '#999'}; font-weight: 500;">
-                            Filtrasi: ${filtrasi
+                            Filtrasi: ${filtrationStatus} | MQ-135: ${mq135Status}
+                        </p>
+                    </div>
+                    <div class="bus-status">
+                        <div style="color: ${bus.mq135 > 400 ? '#F44336' : '#4CAF50'};">MQ-135: ${bus.mq135} ppm</div>
+                        <div>NO2: ${bus.no2} ppb</div>
+                    </div>
+                    <div class="bus-controls">
+                        <button class="activate-btn ${bus.filtrationActive ? 'active' : ''}" 
+                                onclick="activateBusForFiltrationMonitoring('${bus.id}')">
+                            ${bus.filtrationActive ? 'Terpantau' : 'Pantau'}
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(busItem);
+            });
+        }
+
+        function renderAlerts() {
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = '';
+            
+            // Show only latest 10 alerts
+            const recentAlerts = alerts.slice(0, 10);
+            
+            recentAlerts.forEach(alert => {
+                const alertItem = document.createElement('div');
+                alertItem.className = 'alert-item';
+                alertItem.innerHTML = `
+                    <strong>${alert.bus}</strong> - ${alert.message}
+                    <div style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">
+                        ${alert.time} WIB
+                    </div>
+                `;
+                container.appendChild(alertItem);
+            });
+        }
+
+        function getMetricLabel(metric) {
+            const labels = {
+                'pm25': 'PM2.5 (μg/m³)',
+                'co2': 'CO2 (ppm)',
+                'mq135': 'MQ-135 Rata-rata (ppm)',
+                'no2': 'NO2 (ppb)'
+            };
+            return labels[metric];
+        }
+
+        function getMetricColor(metric) {
+            const colors = {
+                'pm25': '#4CAF50',
+                'co2': '#FF9800',
+                'mq135': '#F44336',
+                'no2': '#9C27B0'
+            };
+            return colors[metric];
+        }
+
+        function updateMetrics() {
+            // Calculate averages from bus data
+            const pm25Values = busData.map(bus => bus.pm25);
+            const co2Values = busData.map(bus => bus.co2);
+            const mq135Values = busData.map(bus => bus.mq135);
+            const no2Values = busData.map(bus => bus.no2);
+            
+            document.getElementById('pm25-avg').textContent = Math.round(pm25Values.reduce((a, b) => a + b, 0) / pm25Values.length);
+            document.getElementById('co2-avg').textContent = Math.round(co2Values.reduce((a, b) => a + b, 0) / co2Values.length);
+            document.getElementById('mq135-avg').textContent = Math.round(mq135Values.reduce((a, b) => a + b, 0) / mq135Values.length);
+            document.getElementById('no2-avg').textContent = Math.round(no2Values.reduce((a, b) => a + b, 0) / no2Values.length);
+            
+            // Update active bus count
+            document.getElementById('active-buses').textContent = busData.length;
+            
+            // Update filtration system status
+            updateSystemFiltrationStatus();
+        }
+
+        // Initialize the dashboard
+        function init() {
+            updateTimestamp();
+            updateMetrics();
+            renderBusList();
+            renderAlerts();
+            updateSystemFiltrationStatus();
+            
+            // Delay chart initialization to ensure DOM is ready
+            setTimeout(() => {
+                showChart('pm25');
+            }, 100);
+            
+            // Update data every 30 seconds
+            setInterval(() => {
+                updateTimestamp();
+                // Simulate small data changes
+                busData.forEach(bus => {
+                    bus.pm25 += (Math.random() - 0.5) * 2;
+                    bus.co2 += (Math.random() - 0.5) * 20;
+                    bus.mq135 += (Math.random() - 0.5) * 15;
+                    bus.no2 += (Math.random() - 0.5) * 3;
+                    
+                    // Ensure realistic ranges
+                    bus.pm25 = Math.max(10, Math.min(100, bus.pm25));
+                    bus.co2 = Math.max(400, Math.min(1500, bus.co2));
+                    bus.mq135 = Math.max(200, Math.min(800, bus.mq135));
+                    bus.no2 = Math.max(15, Math.min(100, bus.no2));
+                });
+                
+                updateMetrics();
+                renderBusList();
+                
+                // Update filtration display if a bus is selected
+                if (activeBusId) {
+                    const selectedBus = busData.find(bus => bus.id === activeBusId);
+                    if (selectedBus) {
+                        updateFiltrationDisplay(selectedBus);
+                        
+                        // Update active bus info
+                        const filtrationStatus = isFiltrationNeeded(selectedBus) ? 'BEROPERASI' : 'STANDBY';
+                        const mq135Status = selectedBus.mq135 > 400 ? 'MELEBIHI STANDAR' : 'NORMAL';
+                        
+                        const activeBusInfo = document.getElementById('active-bus-info');
+                        if (activeBusInfo) {
+                            activeBusInfo.innerHTML = `
+                                <h3>🚌 Bus yang Dipantau: ${selectedBus.id}</h3>
+                                <p>Rute: ${selectedBus.route} | MQ-135: ${selectedBus.mq135} ppm (${mq135Status}) | Sistem Filtrasi: ${filtrationStatus}</p>
+                            `;
+                        }
+                    }
+                }
+                
+                if (currentChart) {
+                    showChart(currentMetric);
+                }  
+            }, 30000);
+        }
+
+        // Wait for DOM to be fully loaded before initializing
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
