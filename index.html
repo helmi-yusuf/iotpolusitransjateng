@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Kualitas Udara - Bus Trans Jawa Tengah</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-bottom: 3px solid #4CAF50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .header-content {
+            flex: 1;
+        }
+
+        .header h1 {
+            color: #2E7D32;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .logos-container {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .logo-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            margin-bottom: 0.3rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-text {
+            font-size: 0.7rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .logo-1 { background: linear-gradient(135deg, #FF6B6B, #FF8E53); }
+        .logo-2 { background: linear-gradient(135deg, #4ECDC4, #44A08D); }
+        .logo-3 { background: linear-gradient(135deg, #45B7D1, #96C93D); }
+        .logo-4 { background: linear-gradient(135deg, #FFA726, #FB8C00); }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .status-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        .status-card:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-10px);
+        }
+
+        .tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-5px);
+            background: #333;
+            color: white;
+            padding: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            width: 200px;
+            text-align: left;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #333;
+        }
+
+        .status-card h3 {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-unit {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .good { color: #4CAF50; }
+        .moderate { color: #FF9800; }
+        .unhealthy { color: #F44336; }
+
+        /* Air Filtration Control Section - IMPROVED */
+        .filtration-control-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            border-left: 5px solid #2196F3;
+        }
+
+        .filtration-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .filtration-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #2E7D32;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .filtration-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .filtration-indicator.active {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            box-shadow: 0 2px 10px rgba(76, 175, 80, 0.3);
+        }
+
+        .filtration-indicator.standby {
+            background: #f5f5f5;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .active-bus-info {
+            text-align: center;
+            padding: 1.2rem;
+            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e1bee7;
+        }
+
+        .active-bus-info h3 {
+            color: #1976D2;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .active-bus-info p {
+            color: #424242;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .filtration-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .filtration-unit {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            padding: 2rem 1.5rem;
+            background: #f8f9fa;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+            border: 2px solid transparent;
+        }
+
+        .filtration-unit.active {
+            background: linear-gradient(135deg, #e8f5e8, #f1f8e9);
+            border-color: #4CAF50;
+            box-shadow: 0 5px 20px rgba(76, 175, 80, 0.2);
+        }
+
+        .filtration-icon {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #E0E0E0, #BDBDBD);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: #666;
+            transition: all 0.3s ease;
+            position: relative;
+            border: 3px solid #f5f5f5;
+        }
+
+        .filtration-icon.working {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border-color: #2E7D32;
+            animation: pulse-filtration 2s ease-in-out infinite;
+        }
+
+        .filtration-icon.intake.working {
+            animation: spin-intake 3s linear infinite, pulse-filtration 2s ease-in-out infinite;
+        }
+
+        .filtration-icon.outlet.working {
+            animation: spin-outlet 2s linear infinite, pulse-filtration 2s ease-in-out infinite;
+        }
+
+        @keyframes spin-intake {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes spin-outlet {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(-360deg); }
+        }
+
+        @keyframes pulse-filtration {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(76, 175, 80, 0); }
+        }
+
+        .filtration-status {
+            text-align: center;
+        }
+
+        .filtration-status h4 {
+            color: #2E7D32;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .filtration-status p {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .filtration-metrics {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .filtration-auto-status {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+
+        .filtration-auto-status.standby {
+            background: #f0f0f0;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .filtration-auto-status.working {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .filtration-explanation {
+            background: #fff3e0;
+            border: 1px solid #ffcc02;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: #e65100;
+            line-height: 1.5;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #mainChart {
+            flex: 1;
+            min-height: 300px;
+        }
+
+        .bus-list {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .bus-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #4CAF50;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .bus-item:hover {
+            background: #e8f5e8;
+            transform: translateX(5px);
+        }
+
+        .bus-item.warning {
+            border-left-color: #FF9800;
+        }
+
+        .bus-item.danger {
+            border-left-color: #F44336;
+        }
+
+        .bus-item.active {
+            border-left-color: #2196F3;
+            background: #e3f2fd;
+            border: 2px solid #2196F3;
+        }
+
+        .bus-item.inactive {
+            opacity: 0.5;
+            background: #f5f5f5;
+            border-left-color: #9E9E9E;
+        }
+
+        .bus-info h4 {
+            color: #2E7D32;
+            margin-bottom: 0.3rem;
+        }
+
+        .bus-info p {
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .bus-status {
+            text-align: right;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .bus-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-left: 1rem;
+            align-items: center;
+        }
+
+        .activate-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .activate-btn:hover {
+            background: #1976D2;
+            transform: scale(1.05);
+        }
+
+        .activate-btn:disabled {
+            background: #9E9E9E;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .activate-btn.active {
+            background: #4CAF50;
+        }
+
+        .alerts {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .alert-item {
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 10px;
+            border-left: 4px solid #F44336;
+            background: #ffebee;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .section-title {
+            color: #2E7D32;
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #4CAF50;
+            border-radius: 2px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 0.7rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .control-btn.active {
+            background: #2E7D32;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .filtration-controls {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .header {
+                padding: 1rem;
+            }
+            
+            .container {
+                margin: 1rem auto;
+                padding: 0 0.5rem;
+            }
+        }
+
+        .timestamp {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #666;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="timestamp" id="timestamp"></div>
+    
+    <div class="header">
+        <div class="header-content">
+            <h1>🚌 Sistem Monitoring Polusi Udara Knalpot Bus Trans Jawa Tengah</h1>
+            <p>Pemantauan Real-time Polusi Gas Buang dengan Sensor MQ-135 & Sistem Filtrasi Udara Terintegrasi | Dinas Perhubungan Jawa Tengah</p>
+        </div>
+        <div class="logos-container">
+            <div class="logo-item">
+                <div class="logo-circle logo-1">🏛️</div>
+                <div class="logo-text">Pemprov<br>Jateng</div>
+            </div>
+            <div class="logo-item">
+                <div class="logo-circle logo-2">🚌</div>
+                <div class="logo-text">Dinas<br>Perhubungan</div>
+            </div>
+            <div class="logo-item">
+                <div class="logo-circle logo-3">🎓</div>
+                <div class="logo-text">Universitas<br>Partner</div>
+            </div>
+            <div class="logo-item">
+                <div class="logo-circle logo-4">🔬</div>
+                <div class="logo-text">Lab<br>IoT</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="status-bar">
+            <div class="status-card">
+                <h3>PM2.5 Rata-rata</h3>
+                <div class="status-value good" id="pm25-avg">25</div>
+                <div class="status-unit">μg/m³</div>
+                <div class="tooltip">
+                    <strong>PM2.5 (Partikel Halus)</strong><br>
+                    Debu dan partikel sangat kecil dari asap knalpot. Berbahaya jika terhirup karena masuk ke paru-paru.<br>
+                    <em>Normal: <35 μg/m³</em>
+                </div>
+            </div>
+            <div class="status-card">
+                <h3>CO2 Rata-rata</h3>
+                <div class="status-value moderate" id="co2-avg">780</div>
+                <div class="status-unit">ppm</div>
+                <div class="tooltip">
+                    <strong>CO2 (Karbon Dioksida)</strong><br>
+                    Gas hasil pembakaran bahan bakar bus. Tinggi = pembakaran tidak sempurna.<br>
+                    <em>Normal: <800 ppm</em>
+                </div>
+            </div>
+            <div class="status-card">
+                <h3>MQ-135 Rata-rata</h3>
+                <div class="status-value moderate" id="mq135-avg">420</div>
+                <div class="status-unit">ppm</div>
+                <div class="tooltip">
+                    <strong>MQ-135 (Sensor Gas Berbahaya)</strong><br>
+                    Mendeteksi campuran gas beracun dari knalpot: NH₃, Benzene, CO. Semakin tinggi = udara semakin kotor.<br>
+                    <em>Standar Bersih: ≤400 ppm</em>
+                </div>
+            </div>
+            <div class="status-card">
+                <h3>NO2 Level</h3>
+                <div class="status-value good" id="no2-avg">35</div>
+                <div class="status-unit">ppb</div>
+                <div class="tooltip">
+                    <strong>NO2 (Nitrogen Dioksida)</strong><br>
+                    Gas beracun dari pembakaran mesin diesel. Menyebabkan iritasi mata dan gangguan pernapasan.<br>
+                    <em>Normal: <50 ppb</em>
+                </div>
+            </div>
+            <div class="status-card">
+                <h3>Bus Aktif</h3>
+                <div class="status-value good" id="active-buses">12</div>
+                <div class="status-unit">dari 12 unit</div>
+                <div class="tooltip">
+                    <strong>Status Armada</strong><br>
+                    Jumlah bus yang sedang beroperasi dan mengirim data sensor secara real-time.
+                </div>
+            </div>
+            <div class="status-card">
+                <h3>Sistem Filtrasi</h3>
+                <div class="status-value good" id="filtration-status">STANDBY</div>
+                <div class="status-unit" id="filtration-count">0 Unit Aktif</div>
+                <div class="tooltip">
+                    <strong>Status Sistem Filtrasi</strong><br>
+                    Jumlah bus yang sistem filtrasinya sedang beroperasi membersihkan udara kotor.
+                </div>
+            </div>
+        </div>
+
+        <!-- Air Filtration Control Section - IMPROVED -->
+        <div class="filtration-control-section">
+            <div class="filtration-header">
+                <div class="filtration-title">
+                    Pemantauan Filtrasi Udara Bus
+                </div>
+                <div class="filtration-indicator" id="system-filtration-indicator">
+                    <span>●</span>
+                    <span id="system-filtration-text">Sistem Standby</span>
+                </div>
+            </div>
+            
+            <div class="active-bus-info" id="active-bus-info">
+                <h3>🔍 Pemantauan Sistem Filtrasi Udara</h3>
+                <p>Sistem filtrasi udara bekerja otomatis saat sensor MQ-135 mendeteksi udara kotor melebihi standar (>400 ppm). Pilih bus untuk memantau sistem filtrasi secara detail.</p>
+            </div>
+            
+            <div class="filtration-controls">
+                <div class="filtration-unit" id="intake-unit">
+                    <div class="filtration-icon intake" id="intake-icon">⬇️</div>
+                    <div class="filtration-status">
+                        <h4>Penyedotan Udara Kotor</h4>
+                        <p id="intake-status">Sistem Standby</p>
+                    </div>
+                    <div class="filtration-auto-status standby" id="intake-auto-status">
+                        Standby
+                    </div>
+                </div>
+                
+                <div class="filtration-unit" id="outlet-unit">
+                    <div class="filtration-icon outlet" id="outlet-icon">⬆️</div>
+                    <div class="filtration-status">
+                        <h4>Pengeluaran Udara Bersih</h4>
+                        <p id="outlet-status">Sistem Standby</p>
+                    </div>
+                    <div class="filtration-auto-status standby" id="outlet-auto-status">
+                        Standby
+                    </div>
+                </div>
+            </div>
+            
+            <div class="filtration-explanation">
+                <strong>📋 Cara Kerja Sistem Filtrasi:</strong><br>
+                1. <strong>Penyedotan Udara Kotor:</strong> Menghisap udara kotor dari dalam bus saat MQ-135 > 400 ppm<br>
+                2. <strong>Pengeluaran Udara Bersih:</strong> Mengeluarkan udara yang telah difilter untuk sirkulasi udara bersih<br>
+                3. <strong>Aktivasi Otomatis:</strong> Sistem bekerja otomatis berdasarkan pembacaan sensor MQ-135 secara real-time
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="chart-section">
+                <div class="section-title">📊 Grafik Monitoring Real-time</div>
+                <div class="controls">
+                    <button class="control-btn active" onclick="showChart('pm25')">PM2.5</button>
+                    <button class="control-btn" onclick="showChart('co2')">CO2</button>
+                    <button class="control-btn" onclick="showChart('mq135')">MQ-135 Rata-rata</button>
+                    <button class="control-btn" onclick="showChart('no2')">NO2</button>
+                </div>
+                <canvas id="mainChart"></canvas>
+            </div>
+
+            <div class="bus-list">
+                <div class="section-title">🚍 Status Bus & Sistem Filtrasi</div>
+                <div style="background: #e3f2fd; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.85rem; color: #1976D2;">
+                    <strong>ℹ️ Info:</strong> Pilih bus untuk memantau sistem filtrasi. Sistem filtrasi bekerja otomatis saat MQ-135 > 400 ppm (standar udara kotor).
+                </div>
+                <div id="bus-container">
+                    <!-- Bus items will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <div class="alerts">
+            <div class="section-title">⚠️ Peringatan & Alert</div>
+            <div class="info-panel" style="background: #e3f2fd; padding: 1rem; border-radius: 10px; margin-bottom: 1.5rem; border-left: 4px solid #2196F3;">
+                <h4 style="color: #1976D2; margin-bottom: 0.5rem;">📚 Penjelasan Parameter:</h4>
+                <div style="font-size: 0.85rem; color: #424242; line-height: 1.4;">
+                    <strong>Parameter Monitoring Polusi dan Standar Aman:</strong><br>
+                    • <strong>PM2.5 (μg/m³)</strong>: Berat partikel debu per meter kubik udara - <span style="color: #4CAF50;">Standar aman: ≤35 μg/m³</span><br>
+                    • <strong>CO2 (ppm)</strong>: Konsentrasi karbon dioksida dari pembakaran - <span style="color: #4CAF50;">Standar normal: ≤800 ppm</span><br>
+                    • <strong>MQ-135 (ppm)</strong>: Tingkat udara kotor campuran - <span style="color: #4CAF50;">Standar bersih: ≤400 ppm</span><br>
+                    • <strong>NO2 (ppb)</strong>: Nitrogen dioksida - 1000x lebih sensitif dari ppm - <span style="color: #4CAF50;">Standar aman: ≤50 ppb</span><br>
+                    • <strong>Sistem Filtrasi Udara:</strong> Bekerja otomatis saat MQ-135 melebihi standar (>400 ppm) untuk membersihkan udara kotor
+                </div>
+            </div>
+            <div id="alerts-container">
+                <!-- Alerts will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentChart = null;
+        let currentMetric = 'pm25';
+        let activeBusId = null;
+        let intakeActive = false;
+        let outletActive = false;
+        
+        const busData = [
+            { id: 'TJ-001', route: 'Semarang - Solo', pm25: 28, co2: 820, mq135: 380, no2: 32, status: 'good', filtrationActive: false },
+            { id: 'TJ-002', route: 'Yogya - Semarang', pm25: 45, co2: 950, mq135: 520, no2: 48, status: 'moderate', filtrationActive: false },
+            { id: 'TJ-003', route: 'Solo - Magelang', pm25: 22, co2: 680, mq135: 320, no2: 28, status: 'good', filtrationActive: false },
+            { id: 'TJ-004', route: 'Purwokerto - Semarang', pm25: 35, co2: 780, mq135: 410, no2: 38, status: 'good', filtrationActive: false },
+            { id: 'TJ-005', route: 'Tegal - Semarang', pm25: 65, co2: 1200, mq135: 680, no2: 72, status: 'unhealthy', filtrationActive: false },
+            { id: 'TJ-006', route: 'Kudus - Solo', pm25: 30, co2: 720, mq135: 360, no2: 35, status: 'good', filtrationActive: false },
+            { id: 'TJ-007', route: 'Pekalongan - Semarang', pm25: 42, co2: 890, mq135: 480, no2: 45, status: 'moderate', filtrationActive: false },
+            { id: 'TJ-008', route: 'Salatiga - Yogya', pm25: 25, co2: 650, mq135: 290, no2: 25, status: 'good', filtrationActive: false },
+            { id: 'TJ-009', route: 'Klaten - Semarang', pm25: 38, co2: 840, mq135: 450, no2: 42, status: 'moderate', filtrationActive: false },
+            { id: 'TJ-010', route: 'Wonogiri - Solo', pm25: 20, co2: 600, mq135: 280, no2: 22, status: 'good', filtrationActive: false },
+            { id: 'TJ-011', route: 'Kendal - Semarang', pm25: 33, co2: 750, mq135: 390, no2: 36, status: 'good', filtrationActive: false },
+            { id: 'TJ-012', route: 'Boyolali - Yogya', pm25: 27, co2: 700, mq135: 340, no2: 30, status: 'good', filtrationActive: false }
+        ];
+
+        const alerts = [
+            { bus: 'TJ-005', message: 'Sistem filtrasi aktif - MQ-135 deteksi udara kotor tinggi (680 ppm)', time: '14:35', severity: 'high' },
+            { bus: 'TJ-005', message: 'NO2 melebihi batas aman - sistem filtrasi diperlukan (72 ppb)', time: '14:33', severity: 'high' },
+            { bus: 'TJ-002', message: 'MQ-135 melebihi standar - sistem filtrasi dimulai (520 ppm)', time: '14:20', severity: 'medium' },
+            { bus: 'TJ-007', message: 'Sistem filtrasi aktif - udara kotor terdeteksi (480 ppm)', time: '14:15', severity: 'medium' },
+            { bus: 'TJ-009', message: 'MQ-135 mendekati batas - sistem filtrasi standby (450 ppm)', time: '14:10', severity: 'low' }
+        ];
+
+        // Global functions accessible from HTML onclick
+        window.showChart = function(metric) {
+            currentMetric = metric;
+            
+            // Update button states
+            document.querySelectorAll('.control-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Find and activate the clicked button
+            const buttons = document.querySelectorAll('.control-btn');
+            buttons.forEach(btn => {
+                if (btn.textContent.toLowerCase().includes(metric.toLowerCase()) || 
+                    (metric === 'pm25' && btn.textContent.includes('PM2.5')) ||
+                    (metric === 'co2' && btn.textContent.includes('CO2')) ||
+                    (metric === 'mq135' && btn.textContent.includes('MQ-135')) ||
+                    (metric === 'no2' && btn.textContent.includes('NO2'))) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Generate sample data for the last 24 hours
+            const labels = [];
+            const data = [];
+            const now = new Date();
+            
+            for (let i = 23; i >= 0; i--) {
+                const time = new Date(now.getTime() - (i * 60 * 60 * 1000));
+                labels.push(time.getHours().toString().padStart(2, '0') + ':00');
+                
+                // Generate realistic data based on metric
+                let value;
+                switch(metric) {
+                    case 'pm25':
+                        value = 20 + Math.random() * 30 + Math.sin(i/4) * 10;
+                        break;
+                    case 'co2':
+                        value = 600 + Math.random() * 400 + Math.sin(i/3) * 100;
+                        break;
+                    case 'mq135':
+                        value = 250 + Math.random() * 300 + Math.sin(i/4) * 80;
+                        break;
+                    case 'no2':
+                        value = 20 + Math.random() * 40 + Math.sin(i/5) * 15;
+                        break;
+                    default:
+                        value = 50 + Math.random() * 100;
+                }
+                data.push(Math.max(0, Math.round(value)));
+            }
+            
+            const canvas = document.getElementById('mainChart');
+            if (!canvas) {
+                console.error('Canvas element mainChart not found');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            
+            if (currentChart) {
+                currentChart.destroy();
+                currentChart = null;
+            }
+            
+            try {
+                const config = {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: getMetricLabel(metric),
+                            data: data,
+                            borderColor: getMetricColor(metric),
+                            backgroundColor: getMetricColor(metric) + '20',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: getMetricColor(metric),
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 20
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                borderColor: getMetricColor(metric),
+                                borderWidth: 1
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return Math.round(value);
+                                    },
+                                    color: '#666'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(0,0,0,0.1)',
+                                    drawBorder: false
+                                },
+                                ticks: {
+                                    color: '#666'
+                                }
+                            }
+                        },
+                        elements: {
+                            point: {
+                                hoverRadius: 8
+                            }
+                        },
+                        animation: {
+                            duration: 750,
+                            easing: 'easeInOutQuart'
+                        }
+                    }
+                };
+                
+                currentChart = new Chart(ctx, config);
+            } catch (error) {
+                console.error('Error creating chart:', error);
+            }
+        };
+
+        window.activateBusForFiltrationMonitoring = function(busId) {
+            // Reset all bus filtration monitoring status
+            busData.forEach(bus => {
+                bus.filtrationActive = false;
+            });
+            
+            // Find and activate selected bus for monitoring
+            const selectedBus = busData.find(bus => bus.id === busId);
+            if (selectedBus) {
+                selectedBus.filtrationActive = true;
+                activeBusId = busId;
+                
+                // Update active bus info
+                const filtrationStatus = isFiltrationNeeded(selectedBus) ? 'BEROPERASI' : 'STANDBY';
+                const mq135Status = selectedBus.mq135 > 400 ? 'MELEBIHI STANDAR' : 'NORMAL';
+                
+                document.getElementById('active-bus-info').innerHTML = `
+                    <h3>🚌 Bus yang Dipantau: ${selectedBus.id}</h3>
+                    <p>Rute: ${selectedBus.route} | MQ-135: ${selectedBus.mq135} ppm (${mq135Status}) | Sistem Filtrasi: ${filtrationStatus}</p>
+                `;
+                
+                // Update filtration system display
+                updateFiltrationDisplay(selectedBus);
+                
+                // Add alert for monitoring activation
+                alerts.unshift({
+                    bus: busId,
+                    message: `Bus ${busId} dipilih untuk pemantauan sistem filtrasi udara`,
+                    time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                    severity: 'low'
+                });
+                
+                // Update displays
+                renderBusList();
+                renderAlerts();
+                updateSystemFiltrationStatus();
+            }
+        };
+
+        function isFiltrationNeeded(bus) {
+            return bus.mq135 > 400; // Based on MQ-135 standard as requested
+        }
+
+        function updateFiltrationDisplay(bus) {
+            const needsFiltration = isFiltrationNeeded(bus);
+            const mq135Level = bus.mq135;
+            
+            // Update Intake System
+            updateFiltrationUnit('intake', needsFiltration, 0, 
+                needsFiltration ? 'Menyedot Udara Kotor' : 'Sistem Standby');
+            
+            // Update Outlet System  
+            updateFiltrationUnit('outlet', (mq135Level > 500), 0,
+                (mq135Level > 500) ? 'Mengeluarkan Udara Bersih' : 'Sistem Standby');
+        }
+
+        function updateFiltrationUnit(type, isActive, capacity, statusText) {
+            const icon = document.getElementById(`${type}-icon`);
+            const status = document.getElementById(`${type}-status`);
+            const autoStatus = document.getElementById(`${type}-auto-status`);
+            const unit = document.getElementById(`${type}-unit`);
+            
+            if (isActive) {
+                icon.classList.add('working');
+                status.textContent = statusText;
+                autoStatus.textContent = 'Beroperasi';
+                autoStatus.classList.remove('standby');
+                autoStatus.classList.add('working');
+                unit.classList.add('active');
+            } else {
+                icon.classList.remove('working');
+                status.textContent = statusText;
+                autoStatus.textContent = 'Standby';
+                autoStatus.classList.remove('working');
+                autoStatus.classList.add('standby');
+                unit.classList.remove('active');
+            }
+        }
+
+        function updateSystemFiltrationStatus() {
+            const activeFiltrationBuses = busData.filter(bus => isFiltrationNeeded(bus));
+            const indicator = document.getElementById('system-filtration-indicator');
+            const indicatorText = document.getElementById('system-filtration-text');
+            const filtrationStatus = document.getElementById('filtration-status');
+            const filtrationCount = document.getElementById('filtration-count');
+            
+            if (activeFiltrationBuses.length > 0) {
+                indicator.classList.remove('standby');
+                indicator.classList.add('active');
+                indicatorText.textContent = 'Sistem Beroperasi';
+                filtrationStatus.textContent = 'AKTIF';
+                filtrationStatus.className = 'status-value moderate';
+                filtrationCount.textContent = `${activeFiltrationBuses.length} Unit Aktif`;
+            } else {
+                indicator.classList.remove('active');
+                indicator.classList.add('standby');
+                indicatorText.textContent = 'Sistem Standby';
+                filtrationStatus.textContent = 'STANDBY';
+                filtrationStatus.className = 'status-value good';
+                filtrationCount.textContent = '0 Unit Aktif';
+            }
+        }
+
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('timestamp').textContent = 
+                `Update terakhir: ${now.toLocaleString('id-ID')}`;
+        }
+
+        function renderBusList() {
+            const container = document.getElementById('bus-container');
+            container.innerHTML = '';
+            
+            busData.forEach(bus => {
+                const busItem = document.createElement('div');
+                let itemClass = `bus-item ${bus.status === 'unhealthy' ? 'danger' : bus.status === 'moderate' ? 'warning' : ''}`;
+                if (bus.filtrationActive) {
+                    itemClass += ' active';
+                }
+                busItem.className = itemClass;
+                
+                const filtrationNeeded = isFiltrationNeeded(bus);
+                const filtrationStatus = filtrationNeeded ? 'BEROPERASI' : 'STANDBY';
+                const mq135Status = bus.mq135 > 400 ? 'KOTOR' : 'BERSIH';
+                
+                busItem.innerHTML = `
+                    <div class="bus-info">
+                        <h4>${bus.id} ${bus.filtrationActive ? '(Dipantau)' : ''}</h4>
+                        <p>${bus.route}</p>
+                        <p style="font-size: 0.75rem; color: ${filtrationNeeded ? '#4CAF50' : '#999'}; font-weight: 500;">
+                            Filtrasi: ${filtrationStatus} | MQ-135: ${mq135Status}
+                        </p>
+                    </div>
+                    <div class="bus-status">
+                        <div style="color: ${bus.mq135 > 400 ? '#F44336' : '#4CAF50'};">MQ-135: ${bus.mq135} ppm</div>
+                        <div>NO2: ${bus.no2} ppb</div>
+                    </div>
+                    <div class="bus-controls">
+                        <button class="activate-btn ${bus.filtrationActive ? 'active' : ''}" 
+                                onclick="activateBusForFiltrationMonitoring('${bus.id}')">
+                            ${bus.filtrationActive ? 'Terpantau' : 'Pantau'}
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(busItem);
+            });
+        }
+
+        function renderAlerts() {
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = '';
+            
+            // Show only latest 10 alerts
+            const recentAlerts = alerts.slice(0, 10);
+            
+            recentAlerts.forEach(alert => {
+                const alertItem = document.createElement('div');
+                alertItem.className = 'alert-item';
+                alertItem.innerHTML = `
+                    <strong>${alert.bus}</strong> - ${alert.message}
+                    <div style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">
+                        ${alert.time} WIB
+                    </div>
+                `;
+                container.appendChild(alertItem);
+            });
+        }
+
+        function getMetricLabel(metric) {
+            const labels = {
+                'pm25': 'PM2.5 (μg/m³)',
+                'co2': 'CO2 (ppm)',
+                'mq135': 'MQ-135 Rata-rata (ppm)',
+                'no2': 'NO2 (ppb)'
+            };
+            return labels[metric];
+        }
+
+        function getMetricColor(metric) {
+            const colors = {
+                'pm25': '#4CAF50',
+                'co2': '#FF9800',
+                'mq135': '#F44336',
+                'no2': '#9C27B0'
+            };
+            return colors[metric];
+        }
+
+        function updateMetrics() {
+            // Calculate averages from bus data
+            const pm25Values = busData.map(bus => bus.pm25);
+            const co2Values = busData.map(bus => bus.co2);
+            const mq135Values = busData.map(bus => bus.mq135);
+            const no2Values = busData.map(bus => bus.no2);
+            
+            document.getElementById('pm25-avg').textContent = Math.round(pm25Values.reduce((a, b) => a + b, 0) / pm25Values.length);
+            document.getElementById('co2-avg').textContent = Math.round(co2Values.reduce((a, b) => a + b, 0) / co2Values.length);
+            document.getElementById('mq135-avg').textContent = Math.round(mq135Values.reduce((a, b) => a + b, 0) / mq135Values.length);
+            document.getElementById('no2-avg').textContent = Math.round(no2Values.reduce((a, b) => a + b, 0) / no2Values.length);
+            
+            // Update active bus count
+            document.getElementById('active-buses').textContent = busData.length;
+            
+            // Update filtration system status
+            updateSystemFiltrationStatus();
+        }
+
+        // Initialize the dashboard
+        function init() {
+            updateTimestamp();
+            updateMetrics();
+            renderBusList();
+            renderAlerts();
+            updateSystemFiltrationStatus();
+            
+            // Delay chart initialization to ensure DOM is ready
+            setTimeout(() => {
+                showChart('pm25');
+            }, 100);
+            
+            // Update data every 30 seconds
+            setInterval(() => {
+                updateTimestamp();
+                // Simulate small data changes
+                busData.forEach(bus => {
+                    bus.pm25 += (Math.random() - 0.5) * 2;
+                    bus.co2 += (Math.random() - 0.5) * 20;
+                    bus.mq135 += (Math.random() - 0.5) * 15;
+                    bus.no2 += (Math.random() - 0.5) * 3;
+                    
+                    // Ensure realistic ranges
+                    bus.pm25 = Math.max(10, Math.min(100, bus.pm25));
+                    bus.co2 = Math.max(400, Math.min(1500, bus.co2));
+                    bus.mq135 = Math.max(200, Math.min(800, bus.mq135));
+                    bus.no2 = Math.max(15, Math.min(100, bus.no2));
+                });
+                
+                updateMetrics();
+                renderBusList();
+                
+                // Update filtration display if a bus is selected
+                if (activeBusId) {
+                    const selectedBus = busData.find(bus => bus.id === activeBusId);
+                    if (selectedBus) {
+                        updateFiltrationDisplay(selectedBus);
+                        
+                        // Update active bus info
+                        const filtrationStatus = isFiltrationNeeded(selectedBus) ? 'BEROPERASI' : 'STANDBY';
+                        const mq135Status = selectedBus.mq135 > 400 ? 'MELEBIHI STANDAR' : 'NORMAL';
+                        
+                        const activeBusInfo = document.getElementById('active-bus-info');
+                        if (activeBusInfo) {
+                            activeBusInfo.innerHTML = `
+                                <h3>🚌 Bus yang Dipantau: ${selectedBus.id}</h3>
+                                <p>Rute: ${selectedBus.route} | MQ-135: ${selectedBus.mq135} ppm (${mq135Status}) | Sistem Filtrasi: ${filtrationStatus}</p>
+                            `;
+                        }
+                    }
+                }
+                
+                if (currentChart) {
+                    showChart(currentMetric);
+                }  
+            }, 30000);
+        }
+
+        // Wait for DOM to be fully loaded before initializing
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
