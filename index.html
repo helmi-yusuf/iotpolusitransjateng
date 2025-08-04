@@ -22,48 +22,47 @@
         .header {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            padding: 2.5rem 4rem;
+            padding: 2rem 3rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             border-bottom: 3px solid #4CAF50;
         }
 
         .header-content {
             display: flex;
-            align-items: center;
-            gap: 2rem;
+            flex-direction: column;
+            align-items: flex-start;
             max-width: 1400px;
             margin: 0 auto;
         }
 
         .main-logo-container {
-            flex-shrink: 0;
             display: flex;
             align-items: center;
-            gap: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
         .main-logo {
-            height: 120px; /* Sesuaikan dengan ukuran logo partner */
+            height: 200px;
             width: auto;
             object-fit: contain;
         }
 
         .header-text {
-            flex: 1;
+            max-width: 800px;
         }
 
         .header h1 {
             color: #2E7D32;
-            font-size: 2rem; /* Ukuran font dikecilkan */
-            margin-bottom: 0.8rem;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
             line-height: 1.2;
         }
 
         .header p {
             color: #666;
-            font-size: 1rem; /* Ukuran font dikecilkan */
-            line-height: 1.4;
-            font-weight: 500;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
         }
 
         .logos-container {
@@ -71,13 +70,13 @@
             gap: 2rem;
             align-items: center;
             justify-content: flex-end;
-            margin-top: 1rem;
+            margin-left: auto;
         }
 
         /* Logo partner tetap sama ukurannya */
         .logo-circle {
-            width: 100px;
-            height: 100px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             display: flex;
             align-items: center;
