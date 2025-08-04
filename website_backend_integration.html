@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Kualitas Udara - Bus Trans Jawa Tengah</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        /* CSS sama seperti sebelumnya - tidak berubah */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-bottom: 3px solid #4CAF50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: #666;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            border: 2px solid #ddd;
+        }
+
+        .connection-status.connected {
+            border-color: #4CAF50;
+            color: #2E7D32;
+        }
+
+        .connection-status.disconnected {
+            border-color: #F44336;
+            color: #C62828;
+        }
+
+        /* CSS lainnya sama seperti file sebelumnya */
+        /* ... (copy all other CSS from the original file) ... */
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connection-status">
+        🔄 Connecting to hardware...
+    </div>
+    
+    <!-- HTML content sama seperti sebelumnya -->
+    <!-- ... (copy all HTML content from the original file) ... -->
+
+    <script>
+        // Global variables
+        let currentChart = null;
+        let currentMetric = 'pm25';
+        let activeBusId = null;
+        let intakeActive = false;
+        let outletActive = false;
+        let isHardwareConnected = false;
+        let lastHardwareUpdate = 0;
+        
+        // Hardware connection settings
+        const HARDWARE_CHECK_INTERVAL = 5000; // Check hardware every 5 seconds
+        const HARDWARE_TIMEOUT = 30000; // Consider disconnected after 30 seconds
+        
+        // Bus data - akan diupdate dari hardware
+        let busData = [
+            { id: 'TJ-001', route: 'Semarang - Solo', pm25: 28, co2: 820, mq135: 380, no2: 32, status: 'good', filtrationActive: false, hardwareConnected: false },
+            // ... data bus lainnya tetap sama untuk simulasi
+        ];
+
+        // Hardware data storage
+        let hardwareData = {
+            busId: 'TJ-001',
+            route: 'Semarang - Solo',
+            mq135_sensor1: 0,
+            mq135_sensor2: 0,
+            mq135_average: 0,
+            intake_active: false,
+            outlet_active: false,
+            timestamp: 0,
+            wifi_signal: 0,
+            uptime: 0
+        };
+
+        // API Functions untuk komunikasi dengan hardware
+        async function fetchHardwareData() {
+            try {
+                // Try to fetch from local hardware first
+                const localResponse = await fetch('http://192.168.1.100/data', { // Ganti dengan IP Wemos D1 Mini Anda
+                    method: 'GET',
+                    timeout: 5000
+                });
+                
+                if (localResponse.ok) {
+                    const data = await localResponse.json();
+                    updateHardwareData(data);
+                    updateConnectionStatus(true);
+                    return true;
+                }
+            } catch (error) {
+                console.log('Local hardware not accessible, trying cloud endpoint...');
+            }
+            
+            try {
+                // Fallback to cloud endpoint (if you set up a cloud database)
+                const cloudResponse = await fetch('/api/hardware-data', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (cloudResponse.ok) {
+                    const data = await cloudResponse.json();
+                    updateHardwareData(data);
+                    updateConnectionStatus(true);
+                    return true;
+                }
+            } catch (error) {
+                console.error('Failed to fetch hardware data:', error);
+            }
+            
+            updateConnectionStatus(false);
+            return false;
+        }
+
+        function updateHardwareData(data) {
+            hardwareData = { ...hardwareData, ...data };
+            lastHardwareUpdate = Date.now();
+            
+            // Update bus data dengan data real dari hardware
+            const hardwareBus = busData.find(bus => bus.id === hardwareData.busId);
+            if (hardwareBus) {
+                hardwareBus.mq135 = Math.round(hardwareData.mq135_average || hardwareData.mq135_sensor1 || 0);
+                hardwareBus.pm25 = Math.round(25 + (hardwareBus.mq135 - 300) * 0.1); // Estimasi berdasarkan MQ135
+                hardwareBus.co2 = Math.round(600 + (hardwareBus.mq135 - 300) * 0.8); // Estimasi berdasarkan MQ135
+                hardwareBus.no2 = Math.round(20 + (hardwareBus.mq135 - 300) * 0.06); // Estimasi berdasarkan MQ135
+                hardwareBus.hardwareConnected = true;
+                hardwareBus.intakeActive = hardwareData.intake_active;
+                hardwareBus.outletActive = hardwareData.outlet_active;
+                
+                // Update status berdasarkan MQ135
+                if (hardwareBus.mq135 > 600) {
+                    hardwareBus.status = 'unhealthy';
+                } else if (hardwareBus.mq135 > 400) {
+                    hardwareBus.status = 'moderate';
+                } else {
+                    hardwareBus.status = 'good';
+                }
+            }
+            
+            // Update filtration display jika bus ini yang sedang dipantau
+            if (activeBusId === hardwareData.busId) {
+                updateFiltrationDisplayWithHardwareData();
+            }
+        }
+
+        function updateConnectionStatus(connected) {
+            isHardwareConnected = connected;
+            const statusElement = document.getElementById('connection-status');
+            
+            if (connected) {
+                statusElement.textContent = `🟢 Hardware Connected - ${hardwareData.busId}`;
+                statusElement.className = 'connection-status connected';
+            } else {
+                statusElement.textContent = '🔴 Hardware Disconnected';
+                statusElement.className = 'connection-status disconnected';
+            }
+        }
+
+        function updateFiltrationDisplayWithHardwareData() {
+            const bus = busData.find(b => b.id === hardwareData.busId);
+            if (!bus) return;
+            
+            // Update intake system
+            updateFiltrationUnit('intake', hardwareData.intake_active, 0,
+                hardwareData.intake_active ? 'Menyedot Udara Kotor (HARDWARE)' : 'Sistem Standby');
+            
+            // Update outlet system
+            updateFiltrationUnit('outlet', hardwareData.outlet_active, 0,
+                hardwareData.outlet_active ? 'Mengeluarkan Udara Bersih (HARDWARE)' : 'Sistem Standby');
+            
+            // Update active bus info
+            const filtrationStatus = (hardwareData.intake_active || hardwareData.outlet_active) ? 'BEROPERASI' : 'STANDBY';
+            const mq135Status = hardwareData.mq135_average > 400 ? 'MELEBIHI STANDAR' : 'NORMAL';
+            
+            document.getElementById('active-bus-info').innerHTML = `
+                <h3>🚌 Bus yang Dipantau: ${hardwareData.busId} ${isHardwareConnected ? '(HARDWARE CONNECTED)' : '(OFFLINE)'}</h3>
+                <p>Rute: ${hardwareData.route} | MQ-135: ${Math.round(hardwareData.mq135_average)} ppm (${mq135Status}) | Sistem Filtrasi: ${filtrationStatus}</p>
+                <p style="font-size: 0.8rem; color: #666;">WiFi Signal: ${hardwareData.wifi_signal}dBm | Uptime: ${Math.round(hardwareData.uptime/1000)}s</p>
+            `;
+        }
+
+        // Hardware control functions
+        async function sendHardwareCommand(command, value) {
+            try {
+                const response = await fetch(`http://192.168.1.100/control?${command}=${value}`, { // Ganti dengan IP Wemos D1 Mini Anda
+                    method: 'GET',
+                    timeout: 3000
+                });
+                
+                if (response.ok) {
+                    console.log(`Hardware command sent: ${command}=${value}`);
+                    // Refresh data after command
+                    setTimeout(fetchHardwareData, 1000);
+                    return true;
+                }
+            } catch (error) {
+                console.error('Failed to send hardware command:', error);
+            }
+            return false;
+        }
+
+        // Override aktivasi bus untuk hardware
+        window.activateBusForFiltrationMonitoring = async function(busId) {
+            // Reset all bus filtration monitoring status
+            busData.forEach(bus => {
+                bus.filtrationActive = false;
+            });
+            
+            // Find and activate selected bus for monitoring
+            const selectedBus = busData.find(bus => bus.id === busId);
+            if (selectedBus) {
+                selectedBus.filtrationActive = true;
+                activeBusId = busId;
+                
+                // Jika ini adalah hardware bus, update dengan data real
+                if (busId === hardwareData.busId && isHardwareConnected) {
+                    updateFiltrationDisplayWithHardwareData();
+                } else {
+                    // Update untuk bus simulasi
+                    const filtrationStatus = isFiltrationNeeded(selectedBus) ? 'BEROPERASI' : 'STANDBY';
+                    const mq135Status = selectedBus.mq135 > 400 ? 'MELEBIHI STANDAR' : 'NORMAL';
+                    
+                    document.getElementById('active-bus-info').innerHTML = `
+                        <h3>🚌 Bus yang Dipantau: ${selectedBus.id} (SIMULASI)</h3>
+                        <p>Rute: ${selectedBus.route} | MQ-135: ${selectedBus.mq135} ppm (${mq135Status}) | Sistem Filtrasi: ${filtrationStatus}</p>
+                    `;
+                    
+                    updateFiltrationDisplay(selectedBus);
+                }
+                
+                // Add alert for monitoring activation
+                alerts.unshift({
+                    bus: busId,
+                    message: `Bus ${busId} dipilih untuk pemantauan sistem filtrasi udara ${isHardwareConnected && busId === hardwareData.busId ? '(HARDWARE CONNECTED)' : '(SIMULASI)'}`,
+                    time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                    severity: 'low'
+                });
+                
+                // Update displays
+                renderBusList();
+                renderAlerts();
+                updateSystemFiltrationStatus();
+            }
+        };
+
+        // Add manual hardware control functions
+        window.controlIntakeFan = async function(action) {
+            if (activeBusId === hardwareData.busId && isHardwareConnected) {
+                const success = await sendHardwareCommand('intake', action);
+                if (success) {
+                    alerts.unshift({
+                        bus: hardwareData.busId,
+                        message: `Manual control: Intake fan ${action === 'on' ? 'diaktifkan' : 'dimatikan'}`,
+                        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                        severity: 'low'
+                    });
+                    renderAlerts();
+                }
+            }
+        };
+
+        window.controlOutletFan = async function(action) {
+            if (activeBusId === hardwareData.busId && isHardwareConnected) {
+                const success = await sendHardwareCommand('outlet', action);
+                if (success) {
+                    alerts.unshift({
+                        bus: hardwareData.busId,
+                        message: `Manual control: Outlet fan ${action === 'on' ? 'diaktifkan' : 'dimatikan'}`,
+                        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                        severity: 'low'
+                    });
+                    renderAlerts();
+                }
+            }
+        };
+
+        // Enhanced bus list rendering with hardware controls
+        function renderBusList() {
+            const container = document.getElementById('bus-container');
+            container.innerHTML = '';
+            
+            busData.forEach(bus => {
+                const busItem = document.createElement('div');
+                let itemClass = `bus-item ${bus.status === 'unhealthy' ? 'danger' : bus.status === 'moderate' ? 'warning' : ''}`;
+                if (bus.filtrationActive) {
+                    itemClass += ' active';
+                }
+                busItem.className = itemClass;
+                
+                const isHardwareBus = bus.id === hardwareData.busId;
+                const filtrationNeeded = isFiltrationNeeded(bus);
+                const filtrationStatus = filtrationNeeded ? 'BEROPERASI' : 'STANDBY';
+                const mq135Status = bus.mq135 > 400 ? 'KOTOR' : 'BERSIH';
+                
+                let hardwareControls = '';
+                if (bus.filtrationActive && isHardwareBus && isHardwareConnected) {
+                    hardwareControls = `
+                        <div style="margin-top: 0.5rem; display: flex; gap: 0.3rem; flex-wrap: wrap;">
+                            <button onclick="controlIntakeFan('on')" style="background: #4CAF50; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 15px; font-size: 0.7rem; cursor: pointer;">Intake ON</button>
+                            <button onclick="controlIntakeFan('off')" style="background: #F44336; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 15px; font-size: 0.7rem; cursor: pointer;">Intake OFF</button>
+                            <button onclick="controlOutletFan('on')" style="background: #2196F3; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 15px; font-size: 0.7rem; cursor: pointer;">Outlet ON</button>
+                            <button onclick="controlOutletFan('off')" style="background: #FF9800; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 15px; font-size: 0.7rem; cursor: pointer;">Outlet OFF</button>
+                        </div>
+                    `;
+                }
+                
+                busItem.innerHTML = `
+                    <div class="bus-info">
+                        <h4>${bus.id} ${bus.filtrationActive ? '(Dipantau)' : ''} ${isHardwareBus && isHardwareConnected ? '🔗' : ''}</h4>
+                        <p>${bus.route}</p>
+                        <p style="font-size: 0.75rem; color: ${filtrationNeeded ? '#4CAF50' : '#999'}; font-weight: 500;">
+                            Filtrasi: ${filtrationStatus} | MQ-135: ${mq135Status} ${isHardwareBus ? '(HARDWARE)' : '(SIM)'}
+                        </p>
+                        ${hardwareControls}
+                    </div>
+                    <div class="bus-status">
+                        <div style="color: ${bus.mq135 > 400 ? '#F44336' : '#4CAF50'};">MQ-135: ${bus.mq135} ppm</div>
+                        <div>NO2: ${bus.no2} ppb</div>
+                        ${isHardwareBus && isHardwareConnected ? '<div style="color: #4CAF50; font-size: 0.7rem;">CONNECTED</div>' : ''}
+                    </div>
+                    <div class="bus-controls">
+                        <button class="activate-btn ${bus.filtrationActive ? 'active' : ''}" 
+                                onclick="activateBusForFiltrationMonitoring('${bus.id}')">
+                            ${bus.filtrationActive ? 'Terpantau' : 'Pantau'}
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(busItem);
+            });
+        }
+
+        // Enhanced initialization with hardware connection
+        async function init() {
+            updateTimestamp();
+            updateMetrics();
+            renderBusList();
+            renderAlerts();
+            updateSystemFiltrationStatus();
+            
+            // Try to connect to hardware
+            console.log('Attempting to connect to hardware...');
+            await fetchHardwareData();
+            
+            // Delay chart initialization to ensure DOM is ready
+            setTimeout(() => {
+                showChart('pm25');
+            }, 100);
+            
+            // Set up periodic hardware data fetching
+            setInterval(async () => {
+                await fetchHardwareData();
+                
+                // Check if hardware is still connected
+                if (Date.now() - lastHardwareUpdate > HARDWARE_TIMEOUT) {
+                    updateConnectionStatus(false);
+                }
+                
+                // Update displays
+                updateTimestamp();
+                updateMetrics();
+                renderBusList();
+                
+                // Update filtration display if hardware bus is selected
+                if (activeBusId === hardwareData.busId && isHardwareConnected) {
+                    updateFiltrationDisplayWithHardwareData();
+                } else if (activeBusId) {
+                    const selectedBus = busData.find(bus => bus.id === activeBusId);
+                    if (selectedBus && selectedBus.id !== hardwareData.busId) {
+                        // Simulate data changes for non-hardware buses
+                        selectedBus.pm25 += (Math.random() - 0.5) * 2;
+                        selectedBus.co2 += (Math.random() - 0.5) * 20;
+                        selectedBus.mq135 += (Math.random() - 0.5) * 15;
+                        selectedBus.no2 += (Math.random() - 0.5) * 3;
+                        
+                        // Ensure realistic ranges
+                        selectedBus.pm25 = Math.max(10, Math.min(100, selectedBus.pm25));
+                        selectedBus.co2 = Math.max(400, Math.min(1500, selectedBus.co2));
+                        selectedBus.mq135 = Math.max(200, Math.min(800, selectedBus.mq135));
+                        selectedBus.no2 = Math.max(15, Math.min(100, selectedBus.no2));
+                        
+                        updateFiltrationDisplay(selectedBus);
+                    }
+                }
+                
+                if (currentChart) {
+                    showChart(currentMetric);
+                }
+            }, HARDWARE_CHECK_INTERVAL);
+        }
+
+        // Copy all other functions from the original file...
+        // (showChart, getMetricLabel, getMetricColor, updateMetrics, renderAlerts, dll.)
+        
+        const alerts = [
+            { bus: 'TJ-001', message: 'Hardware connection established - sistem monitoring aktif', time: '14:35', severity: 'low' },
+            { bus: 'TJ-005', message: 'Sistem filtrasi aktif - MQ-135 deteksi udara kotor tinggi (680 ppm)', time: '14:35', severity: 'high' },
+            { bus: 'TJ-005', message: 'NO2 melebihi batas aman - sistem filtrasi diperlukan (72 ppb)', time: '14:33', severity: 'high' },
+            { bus: 'TJ-002', message: 'MQ-135 melebihi standar - sistem filtrasi dimulai (520 ppm)', time: '14:20', severity: 'medium' },
+            { bus: 'TJ-007', message: 'Sistem filtrasi aktif - udara kotor terdeteksi (480 ppm)', time: '14:15', severity: 'medium' },
+            { bus: 'TJ-009', message: 'MQ-135 mendekati batas - sistem filtrasi standby (450 ppm)', time: '14:10', severity: 'low' }
+        ];
+
+        // All other functions remain the same as in the original file
+        // (Copy semua fungsi lainnya dari file asli...)
+
+        // Wait for DOM to be fully loaded before initializing
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>
