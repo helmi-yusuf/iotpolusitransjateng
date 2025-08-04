@@ -21,7 +21,7 @@
 
         .header {
             background: rgba(255, 255, 255, 0.95);
-            padding: 2rem;
+            padding: 2rem 4rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             border-bottom: 3px solid #4CAF50;
         }
@@ -32,18 +32,20 @@
             justify-content: space-between;
             max-width: 1400px;
             margin: 0 auto;
-            gap: 2rem;
         }
 
         .main-logo-container {
+            flex-shrink: 0;
             display: flex;
+            flex-direction: column;
             align-items: center;
             gap: 1rem;
         }
 
         .main-logo {
-            height: 120px;
+            height: 200px;
             width: auto;
+            object-fit: contain;
         }
 
         .header-text {
@@ -53,26 +55,29 @@
 
         .header h1 {
             color: #2E7D32;
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
             line-height: 1.2;
         }
 
         .header p {
             color: #666;
-            font-size: 0.9rem;
-            line-height: 1.4;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
         }
 
         .logos-container {
             display: flex;
-            align-items: center;
             gap: 2rem;
+            align-items: center;
+            justify-content: flex-end;
+            margin-left: auto;
         }
 
         .logo-circle {
-            width: 60px;
-            height: 60px;
+            width: 70px;
+            height: 70px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -81,15 +86,11 @@
         }
 
         .logo-text {
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             color: #555;
+            font-weight: 500;
             text-align: center;
         }
-
-        .logo-1 { background: linear-gradient(135deg, #FF6B6B, #FF8E53); }
-        .logo-2 { background: linear-gradient(135deg, #4ECDC4, #44A08D); }
-        .logo-3 { background: linear-gradient(135deg, #45B7D1, #96C93D); }
-        .logo-4 { background: linear-gradient(135deg, #FFA726, #FB8C00); }
 
         .container {
             max-width: 1400px;
@@ -1244,7 +1245,6 @@
                 }
                 
                 if (currentChart) {
-                    showChart(currentMetric);
                 }  
             }, 30000);
         }
