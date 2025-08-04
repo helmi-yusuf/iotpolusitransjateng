@@ -21,76 +21,91 @@
 
         .header {
             background: rgba(255, 255, 255, 0.95);
-            padding: 2rem 4rem;
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
             border-bottom: 3px solid #4CAF50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         .header-content {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        .main-logo-container {
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .main-logo {
-            height: 250px;
-            width: auto;
-            object-fit: contain;
-        }
-
-        .header-text {
+            gap: 1.5rem;
             flex: 1;
-            max-width: 600px;
         }
 
         .header h1 {
             color: #2E7D32;
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            line-height: 1.2;
+            font-size: 2.1rem;
+            margin-bottom: 0.3rem;
+            line-height: 1.1;
         }
 
         .header p {
             color: #666;
-            font-size: 1.1rem;
-            line-height: 1.5;
+            font-size: 1.05rem;
+            font-weight: 500;
+        }
+
+        .main-logo-container {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
             margin-bottom: 1rem;
+            flex-shrink: 0;
+        }
+
+        .main-logo {
+            height: 100px;
+            width: 100px;
+            border-radius: 24px;
+            box-shadow: 0 6px 24px rgba(76,175,80,0.18);
+            background: #fff;
+            padding: 10px;
+            object-fit: contain;
         }
 
         .logos-container {
             display: flex;
-            gap: 2rem;
+            gap: 1.5rem;
             align-items: center;
-            justify-content: flex-end;
-            margin-left: auto;
+            flex-wrap: wrap;
+        }
+
+        .logo-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
         }
 
         .logo-circle {
-            width: 70px;
-            height: 70px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 2.2rem;
+            color: white;
             margin-bottom: 0.5rem;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.13);
         }
 
         .logo-text {
-            font-size: 0.8rem;
-            color: #555;
+            font-size: 0.7rem;
+            color: #666;
             font-weight: 500;
-            text-align: center;
         }
+
+        .logo-1 { background: linear-gradient(135deg, #FF6B6B, #FF8E53); }
+        .logo-2 { background: linear-gradient(135deg, #4ECDC4, #44A08D); }
+        .logo-3 { background: linear-gradient(135deg, #45B7D1, #96C93D); }
+        .logo-4 { background: linear-gradient(135deg, #FFA726, #FB8C00); }
 
         .container {
             max-width: 1400px;
@@ -614,13 +629,15 @@
     <div class="timestamp" id="timestamp"></div>
     
     <div class="header">
-        <div class="header-content">
-            <div class="main-logo-container">
-                <img src="img/logo-opsi.png" alt="Logo Olimpiade Penelitian" class="main-logo">
+        <div class="header-content" style="display: flex; align-items: center; gap: 1.5rem;">
+            <div class="main-logo-container" style="flex-shrink: 0;">
+                <img src="img/logo-opsi.png" alt="Logo Olimpiade Penelitian" class="main-logo" style="height:100px; width:100px; border-radius:24px; box-shadow:0 6px 24px rgba(76,175,80,0.18); background: #fff; padding: 10px;">
             </div>
-            <div class="header-text">
-                <h1>Monitoring Polusi Udara Bus Trans Jawa Tengah 🚌</h1>
-                <p>Solusi Cerdas Pengurangan Polusi Udara Bus Trans Jawa Tengah Berbasis Sensor MQ-135 dan Filtrasi Udara Lapisan Bertingkat</p>
+            <div>
+                <h1 style="margin-bottom:0.3rem; color:#2E7D32; font-size:2.1rem; line-height:1.1;">🚌 Monitoring Polusi Udara Bus Trans Jawa Tengah</h1>
+                <p style="color:#666; font-size:1.05rem; font-weight:500;">
+                    Solusi Cerdas Pengurangan Polusi Udara Bus Trans Jawa Tengah Berbasis Sensor MQ-135 dan Filtrasi Udara Lapisan Bertingkat
+                </p>
             </div>
         </div>
         <div class="logos-container">
@@ -1146,6 +1163,8 @@
                 alertItem.className = 'alert-item';
                 alertItem.innerHTML = `
                     <strong>${alert.bus}</strong> - ${alert.message}
+                    <div style="font-size: 0.8rem; color: #666; margin-top: 0.5rem;">
+                        ${alert.time} WIB
                     </div>
                 `;
                 container.appendChild(alertItem);
@@ -1245,6 +1264,7 @@
                 }
                 
                 if (currentChart) {
+                    showChart(currentMetric);
                 }  
             }, 30000);
         }
